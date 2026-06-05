@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+    <script>
+        marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
+    </script>
+    <style>
+        body { background-color: #000000; color: var(--lex-color, #e5e7eb); font-size: var(--lex-size, 14px); }
+        .text-theme { color: var(--lex-color, #e5e7eb); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #000; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .lex-bubble { background-color: #111; border: 1px solid #222; }
+        #sidebar.closed { transform: translateX(-100%); }
+        .hidden-modal { display: none !important; }
+
+        /* Markdown content styling */
+        .md-content { 
+            line-height: 1.6; 
+            color: var(--lex-color, #e5e7eb);
+        }
+        .md-content p { margin-bottom: 0.75rem; color: var(--lex-color, #e5e7eb); }
+        .md-content p:last-child { margin-bottom: 0; }
+        .md-content h1, .md-content h2, .md-content h3, .md-content h4, .md-content h5, .md-content h6 {
+            margin-top: 1rem; margin-bottom: 0.5rem; font-weight: bold;
+            color: var(--lex-color, #e5e7eb);
+        }
+        .md-content h1 { font-size: 1.25rem; }
+        .md-content h2 { font-size: 1.125rem; }
+        .md-content h3 { font-size: 1rem; }
+        .md-content ul, .md-content ol { margin-left: 1.5rem; margin-bottom: 0.75rem; }
+        .md-content li { margin-bottom: 0.25rem; color: var(--lex-color, #e5e7eb); }
+        .md-content li > code { color: var(--lex-color, #e5e7eb); }
+        .md-content blockquote { border-left: 3px solid #444; padding-left: 1rem; color: #9ca3af; margin-bottom: 0.75rem; }
+        .md-content blockquote p { color: #9ca3af; }
+        .md-content a { color: #60a5fa; text-decoration: underline; }
+        .md-content table { width: 100%; border-collapse: collapse; margin-bottom: 0.75rem; }
+        .md-content th, .md-content td { border: 1px solid #333; padding: 0.5rem; text-align: left; color: var(--lex-color, #e5e7eb); }
+        .md-content th { background-color: #1a1a1a; font-weight: bold; color: var(--lex-color, #e5e7eb); }
+        .md-content tr:nth-child(even) { background-color: #0a0a0a; }
+        .md-content tr:nth-child(odd) { background-color: #111; }
+        .md-content code {
+            background-color: #1a1a1a; padding: 0.125rem 0.375rem; border-radius: 4px;
+            font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 0.875em;
+            color: var(--lex-color, #e5e7eb);
+        }
+        .md-content pre {
+            background-color: #0d0d0d; border: 1px solid #222; border-radius: 6px;
+            padding: 0.75rem; margin-bottom: 0.75rem; overflow-x: auto;
+        }
+        .md-content pre code { background-color: transparent; padding: 0; font-size: 0.8125rem; line-height: 1.5; color: var(--lex-color, #e5e7eb); }
+        .md-content hr { border: none; border-top: 1px solid #333; margin: 1rem 0; }
+        .md-content strong { font-weight: bold; color: var(--lex-color, #e5e7eb); }
+        .md-content em { font-style: italic; color: var(--lex-color, #e5e7eb); }
+        .md-content del { color: #6b7280; text-decoration: line-through; }
+        .md-content img { max-width: 100%; border-radius: 6px; }
+        .hljs { background: transparent !important; color: var(--lex-color, #e5e7eb) !important; }
+        .hljs-comment, .hljs-quote { color: #6b7280; }
+        .hljs-keyword, .hljs-selector-tag { color: #c084fc; }
+        .hljs-string, .hljs-template-tag, .hljs-template-variable { color: #4ade80; }
+        .hljs-number, .hljs-literal { color: #f59e0b; }
+        .hljs-title, .hljs-section { color: #60a5fa; }
+        .hljs-function, .hljs-attr { color: #f472b6; }
+        .hljs-type, .hljs-tag { color: #38bdf8; }
+        .hljs-variable, .hljs-property { color: #fbbf24; }
+        .hljs-operator, .hljs-punctuation { color: #9ca3af; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden font-mono text-sm">
+
+    <!-- Sidebar: History -->
+    <aside id="sidebar" class="w-64 bg-black border-r border-zinc-800 flex flex-col transition-transform duration-300 absolute md:relative z-20 h-full closed">
+        <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
+            <h2 class="font-bold tracking-tighter text-zinc-400">HISTORY</h2>
+            <button onclick="clearHistory()" class="text-xs text-red-500 hover:text-red-400">CLEAR</button>
+        </div>
+        <div id="history-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2"></div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="flex-1 flex flex-col relative h-full">
+        <!-- Header -->
+        <header class="p-4 border-b border-zinc-800 flex justify-between items-center bg-black">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="p-2 hover:bg-zinc-900 rounded">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+                </button>
+                <div class="flex flex-col">
+                    <h1 class="font-bold tracking-widest text-theme leading-none">LEX</h1>
+                    <span id="active-model" class="text-[9px] text-zinc-500 uppercase tracking-tighter cursor-pointer hover:text-theme" onclick="showLoadModal()">Detecting Model...</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSettings()" class="p-2 hover:bg-zinc-900 rounded text-zinc-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                </button>
+                <div id="status" class="text-[10px] font-bold uppercase tracking-widest transition-colors duration-300">Initializing...</div>
+            </div>
+        </header>
+
+        <!-- Chat Window -->
+        <div id="chat-window" class="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar"></div>
+
+        <!-- Input Area -->
+        <div class="p-4 bg-black border-t border-zinc-800">
+            <div class="max-w-4xl mx-auto mb-2 flex justify-between items-center text-[9px] text-zinc-500">
+                <div class="flex items-center gap-3">
+                    <span id="context-bar" class="flex items-center gap-1.5">
+                        <div class="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                            <div id="context-fill" class="h-full bg-zinc-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <span id="context-text">0 / 65,000</span>
+                        <span id="temp-display" class="text-zinc-400">T: 0.5</span>
+                    </span>
+                    <span id="encryption-status" class="text-zinc-600"></span>
+                    <span id="connection-status" class="text-zinc-600"></span>
+                </div>
+                <span id="compaction-status" class="text-zinc-600">Auto-compaction: ON (75%)</span>
+            </div>
+            <div class="max-w-4xl mx-auto flex gap-2">
+                <input type="text" id="user-input" class="flex-1 bg-zinc-900 border border-zinc-700 rounded p-3 focus:outline-none focus:border-zinc-500 text-theme" placeholder="Type a message..." autocomplete="off">
+                <button id="send-btn" class="bg-zinc-100 text-black px-6 py-2 font-bold hover:bg-white transition-colors">SEND</button>
+                <button id="stop-btn" class="bg-red-600 text-white px-4 py-2 font-bold hover:bg-red-500 transition-colors hidden">STOP</button>
+            </div>
+        </div>
+    </main>
+
+     <div id="settings-modal" class="hidden-modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-lg w-80 space-y-6 max-h-[90vh] overflow-y-auto">
+             <div class="flex justify-between items-center border-b border-zinc-700 pb-2">
+                 <h3 class="text-lg font-bold">Settings</h3>
+                 <button onclick="toggleSettings()" class="text-zinc-400 hover:text-white text-xl leading-none">&times;</button>
+             </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] text-zinc-500 uppercase mb-2">Font Size</label>
+                    <select onchange="updateFontSize(this.value)" id="font-size-select" class="w-full bg-black border border-zinc-700 p-2 rounded text-xs">
+                        <option value="12px">Small</option>
+                        <option value="14px" selected>Medium</option>
+                        <option value="16px">Large</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="text-xs text-zinc-400">Debug Mode</label>
+                    <input type="checkbox" id="debug-toggle" class="accent-zinc-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-zinc-500 uppercase mb-2">Temperature</label>
+                    <div class="flex items-center gap-3">
+                        <input type="range" id="temp-slider" min="0.0" max="2.0" step="0.1" value="0.5" class="flex-1 accent-zinc-400">
+                        <span id="temp-value" class="text-xs font-mono w-10 text-right">0.5</span>
+                    </div>
+                </div>
+                <button onclick="testCompactionCycle()" class="w-full py-2 text-xs bg-blue-900/30 text-blue-400 border border-blue-800 rounded hover:bg-blue-900/50">Test Compaction Cycle</button>
+                <div class="border-t border-zinc-700 pt-3">
+                    <label class="block text-[10px] text-zinc-500 uppercase mb-2">Font Color</label>
+                    <div class="flex gap-1 flex-wrap" id="color-picker"></div>
+                </div>
+                <div class="border-t border-zinc-700 pt-3">
+                    <button onclick="editIdentity()" class="w-full py-2 text-xs bg-zinc-800 text-zinc-300 border border-zinc-600 rounded hover:bg-zinc-700">Edit Identity Protocol</button>
+                </div>
+                <div id="model-list" class="space-y-1 max-h-[30vh] overflow-y-auto border-t border-zinc-700 pt-3"></div>
+                <button onclick="ejectModel()" class="w-full py-2 text-xs bg-yellow-900/20 text-yellow-400 border border-yellow-800 rounded hover:bg-yellow-900/40" id="eject-btn">Eject Model</button>
+                <div class="border-t border-zinc-700 pt-3">
+                    <label class="block text-[10px] text-zinc-500 uppercase mb-2">Chat History</label>
+                    <div id="settings-history-list" class="space-y-1 max-h-[20vh] overflow-y-auto custom-scrollbar"></div>
+                </div>
+                <button onclick="resetConfig()" class="w-full py-2 text-xs text-red-500 border border-red-900 rounded hover:bg-red-900/20">Reset Server/Identity</button>
+                <button onclick="clearAllStorage()" class="w-full py-2 text-xs text-red-400 border border-red-800 rounded hover:bg-red-900/30 font-bold">CLEAR LOCAL STORAGE</button>
+            </div>
+            <div class="border-t border-zinc-700 pt-4">
+                <h4 class="text-[10px] text-zinc-500 uppercase mb-2">Quantization Legend</h4>
+                <table class="w-full text-[10px]">
+                    <tr><td class="py-0.5"><div class="w-2 h-2 rounded-sm inline-block mr-1.5" style="background-color: #22c55e"></div><span class="text-zinc-400">Q8 / BF16 / FP16</span></td><td class="text-zinc-500 text-right">8-bit — Best quality</td></tr>
+                    <tr><td class="py-0.5"><div class="w-2 h-2 rounded-sm inline-block mr-1.5" style="background-color: #eab308"></div><span class="text-zinc-400">Q6_K</span></td><td class="text-zinc-500 text-right">6-bit — High quality</td></tr>
+                    <tr><td class="py-0.5"><div class="w-2 h-2 rounded-sm inline-block mr-1.5" style="background-color: #f97316"></div><span class="text-zinc-400">Q5 / IQ4</span></td><td class="text-zinc-500 text-right">5-bit — Balanced</td></tr>
+                    <tr><td class="py-0.5"><div class="w-2 h-2 rounded-sm inline-block mr-1.5" style="background-color: #ef4444"></div><span class="text-zinc-400">Q4 / IQ3</span></td><td class="text-zinc-500 text-right">4-bit — Good quality</td></tr>
+                    <tr><td class="py-0.5"><div class="w-2 h-2 rounded-sm inline-block mr-1.5" style="background-color: #a855f7"></div><span class="text-zinc-400">Q3 / Q2</span></td><td class="text-zinc-500 text-right">2-3 bit — Compact</td></tr>
+                    <tr><td class="py-0.5"><div class="w-2 h-2 rounded-sm inline-block mr-1.5" style="background-color: #9ca3af"></div><span class="text-zinc-400">Q1</span></td><td class="text-zinc-500 text-right">1-bit — Maximum compression</td></tr>
+                    <tr><td class="py-0.5"><div class="w-2 h-2 rounded-sm inline-block mr-1.5" style="background-color: #ec4899"></div><span class="text-zinc-400">F32 / FP32</span></td><td class="text-zinc-500 text-right">Full precision — Heaviest</td></tr>
+                    <tr><td class="py-0.5"><div class="w-2 h-2 rounded-sm inline-block mr-1.5" style="background-color: #3f3f46"></div><span class="text-zinc-400">Unknown</span></td><td class="text-zinc-500 text-right">Could not detect</td></tr>
+                </table>
+            </div>
+            <div class="border-t border-zinc-700 pt-4">
+                <h4 class="text-[10px] text-zinc-500 uppercase mb-2">Temperature Reference</h4>
+                <table class="w-full text-[10px]">
+                    <tr><td class="py-0.5 text-zinc-400">0.0</td><td class="text-zinc-500 text-right">Deterministic</td></tr>
+                    <tr><td class="py-0.5 text-zinc-400">0.1</td><td class="text-zinc-500 text-right">Highly focused</td></tr>
+                    <tr><td class="py-0.5 text-zinc-400">0.2</td><td class="text-zinc-500 text-right">Very consistent</td></tr>
+                    <tr><td class="py-0.5 text-zinc-400">0.3</td><td class="text-zinc-500 text-right">Low creativity</td></tr>
+                    <tr><td class="py-0.5 text-zinc-400">0.5</td><td class="text-zinc-500 text-right">Balanced (default)</td></tr>
+                    <tr><td class="py-0.5 text-zinc-400">0.7</td><td class="text-zinc-500 text-right">Moderate creativity</td></tr>
+                    <tr><td class="py-0.5 text-zinc-400">0.9</td><td class="text-zinc-500 text-right">High creativity</td></tr>
+                    <tr><td class="py-0.5 text-zinc-400">1.0</td><td class="text-zinc-500 text-right">Very creative</td></tr>
+                    <tr><td class="py-0.5 text-zinc-400">1.5</td><td class="text-zinc-500 text-right">Maximum randomness</td></tr>
+                    <tr><td class="py-0.5 text-zinc-400">2.0</td><td class="text-zinc-500 text-right">Extreme creativity</td></tr>
+                </table>
+            </div>
+            <button onclick="toggleSettings()" class="w-full py-2 bg-zinc-100 text-black font-bold rounded">Close</button>
+        </div>
+    </div>
+
+      <div id="load-modal" class="hidden-modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+         <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-lg w-80 space-y-4">
+             <h3 class="text-lg font-bold border-b border-zinc-700 pb-2">Select Model</h3>
+             <div id="load-model-list" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
+             <button onclick="hideLoadModal()" class="w-full py-2 bg-zinc-100 text-black font-bold rounded">Close</button>
+         </div>
+     </div>
+
+     <div id="identity-modal" class="hidden-modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+         <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-lg w-[700px] space-y-4">
+             <h3 class="text-lg font-bold border-b border-zinc-700 pb-2">Lex Identity Protocol</h3>
+             <p class="text-xs text-zinc-400">Paste your Lex Identity Protocol (Markdown content). This becomes the system prompt for all conversations.</p>
+             <textarea id="identity-input" class="w-full h-80 bg-black border border-zinc-700 p-3 rounded text-xs font-mono resize-none focus:outline-none focus:border-zinc-500" placeholder="Paste your identity protocol here..."></textarea>
+             <div class="flex gap-2">
+                 <button onclick="submitIdentity()" class="flex-1 py-2 bg-zinc-100 text-black font-bold rounded hover:bg-white">SAVE & CONTINUE</button>
+                 <button onclick="skipIdentity()" class="py-2 px-4 text-zinc-500 border border-zinc-700 rounded hover:bg-zinc-800 text-xs">SKIP</button>
+             </div>
+         </div>
+     </div>
+
+      <script>
+         const CONTEXT_WINDOW = 65000;
+         const COMPACTION_TRIGGER = Math.floor(CONTEXT_WINDOW * 0.75); // ~48,750 tokens
+         const MESSAGES_TO_KEEP = 12; // Keep last 6 exchanges (user+assistant)
+         const COMPACTION_MIN_MESSAGES = 8; // Minimum messages before triggering compaction
+         const GENERATION_TIMEOUT_MS = 180000; // 3 minutes for slow model generations
+
+         // Simple XOR encryption for localStorage data
+         const _XOR_KEY = 'lex-0x7f3a9c2e';
+         function xorCipher(str) {
+             let out = '';
+             for (let i = 0; i < str.length; i++) {
+                 out += String.fromCharCode(str.charCodeAt(i) ^ _XOR_KEY.charCodeAt(i % _XOR_KEY.length));
+             }
+             return out;
+         }
+         function encodeToBase64(str) {
+             const utf8 = unescape(encodeURIComponent(str));
+             let bin = '';
+             for (let i = 0; i < utf8.length; i++) { bin += String.fromCharCode(utf8.charCodeAt(i)); }
+             return btoa(bin);
+         }
+         function decodeFromBase64(b64) {
+             let bin = atob(b64);
+             let utf8 = '';
+             for (let i = 0; i < bin.length; i++) { utf8 += String.fromCharCode(bin.charCodeAt(i)); }
+             return decodeURIComponent(escape(utf8));
+         }
+         function encrypt(plain) { return encodeToBase64(xorCipher(plain)); }
+         function decrypt(encoded) { try { if (!encoded || typeof encoded !== 'string') return null; const raw = xorCipher(decodeFromBase64(encoded)); if (!raw || typeof raw !== 'string') return null; return raw; } catch (e) { console.error('Decrypt failed:', e); return null; } }
+         function saveEncrypted(key, value) { localStorage.setItem(key + '_enc', encrypt(JSON.stringify(value))); }
+         function loadEncrypted(key) { const d = localStorage.getItem(key + '_enc'); return d ? JSON.parse(decrypt(d)) : null; }
+
+         const AppState = {
+             serverHost: localStorage.getItem('lex_server'),
+             lexIdentity: (() => { try { const d = localStorage.getItem('lex_identity_enc'); return (d && decrypt(d)) || ''; } catch { console.error('Failed to load identity, will prompt:', arguments.callee.name); return ''; } })(),
+             userName: localStorage.getItem('lex_user') || '', 
+             chatHistory: (() => { try { const d = localStorage.getItem('lex_history_enc'); return d ? JSON.parse(decrypt(d)) : []; } catch { localStorage.removeItem('lex_history_enc'); return []; } })(),
+             debugMode: localStorage.getItem('lex_debug') === 'true',
+             fontColor: localStorage.getItem('lex_color') || '#e5e7eb',
+             fontSize: localStorage.getItem('lex_size') || '14px',
+             activeModel: localStorage.getItem('lex_active_model') || '',
+             temperature: parseFloat(localStorage.getItem('lex_temperature')) || 0.5,
+             isSending: false,
+             heartbeatStarted: false,
+             currentAbortController: null,
+             lastRenderedIndex: -1,
+             isCompacting: false,
+             connectionSecure: null,
+             _modelLoading: new Set()
+         };
+
+         function isModelLoading(key) { return AppState._modelLoading.has(key); }
+         function setModelLoading(key, loading) { if (loading) AppState._modelLoading.add(key); else AppState._modelLoading.delete(key); }
+
+         const chatWindow = document.getElementById('chat-window');
+         const userInput = document.getElementById('user-input');
+         const sendBtn = document.getElementById('send-btn');
+         const stopBtn = document.getElementById('stop-btn');
+         const statusIndicator = document.getElementById('status');
+         const modelDisplay = document.getElementById('active-model');
+
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        // Fetch to LM Studio - tries HTTP first (LM Studio default), falls back to HTTPS
+        async function lmFetch(path, options = {}) {
+            const host = AppState.serverHost;
+            if (!host) throw new Error('No server configured');
+            const url = `http://${host}:1234${path}`;
+            try {
+                const resp = await fetch(url, options);
+                AppState.connectionSecure = false;
+                return resp;
+            } catch {
+                const fallback = `https://${host}:1234${path}`;
+                AppState.connectionSecure = true;
+                return fetch(fallback, options);
+            }
+        }
+
+        function estimateTokens(text) {
+            if (!text) return 0;
+            return Math.ceil(text.length / 4);
+        }
+
+        function getTotalTokens() {
+            let total = estimateTokens(AppState.lexIdentity || ''); // system prompt
+            AppState.chatHistory.forEach(msg => {
+                total += estimateTokens(msg.content || '');
+            });
+            return total;
+        }
+
+        async function checkAndCompact() {
+            if (AppState.isCompacting || AppState.chatHistory.length < COMPACTION_MIN_MESSAGES) return;
+            const tokens = getTotalTokens();
+            if (tokens > COMPACTION_TRIGGER) {
+                return await compactConversation(tokens);
+            }
+        }
+
+        async function compactConversation(currentTokens, verboseMode = false) {
+            if (AppState.isCompacting) return;
+            AppState.isCompacting = true;
+
+            statusIndicator.innerText = "Compacting...";
+            statusIndicator.style.color = "#60a5fa";
+
+            const cutoffIndex = Math.max(0, AppState.chatHistory.length - MESSAGES_TO_KEEP);
+            const messagesToCompact = AppState.chatHistory.slice(0, cutoffIndex).filter(m => m.role !== 'system' || !m._compacted);
+
+            if (messagesToCompact.length === 0) {
+                AppState.isCompacting = false;
+                statusIndicator.innerText = "Online";
+                statusIndicator.style.color = "#4ade80";
+                return;
+            }
+
+            const compactedMessages = messagesToCompact.filter(m => !m._compacted);
+            if (compactedMessages.length === 0) {
+                AppState.isCompacting = false;
+                statusIndicator.innerText = "Online";
+                statusIndicator.style.color = "#4ade80";
+                return;
+            }
+
+            let systemContext = '';
+            compactedMessages.forEach(msg => {
+                const roleLabel = msg.role === 'user' ? 'User' : (msg._compacted ? 'Summary' : 'LEX');
+                systemContext += `${roleLabel}: ${msg.content}\n\n`;
+            });
+
+            const prompt = `You are a conversation compaction assistant. The following is an early portion of a chat conversation that needs to be summarized for context preservation.\n\n${systemContext}---\nCreate a comprehensive but concise summary of the conversation above. Preserve all technical details, decisions made, code patterns discussed, and key information. Format as a structured context block that will help the AI understand what was previously discussed. Do NOT include greetings or meta-commentary about summarizing. Output ONLY the summary text.`;
+
+            if (estimateTokens(prompt) > 32000) {
+                throw new Error('Compaction prompt too large (' + estimateTokens(prompt).toLocaleString() + ' tokens estimated)');
+            }
+
+            try {
+                const controller = new AbortController();
+                setTimeout(() => controller.abort(), 120000);
+
+                const response = await lmFetch('/api/v1/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: AppState.activeModel || "gemma-4-31b-it-turboquant-mlx",
+                        system_prompt: prompt,
+                        input: "",
+                        temperature: 0.3,
+                    }),
+                    signal: controller.signal
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                let summary;
+                try {
+                    if (data.output && Array.isArray(data.output)) {
+                        const message = data.output.find(item => item.type === 'message');
+                        summary = (message && message.content) ? message.content.trim() : null;
+                    } else if (data.text) {
+                        summary = data.text;
+                    } else {
+                        console.error('Unexpected compaction response:', JSON.stringify(data).slice(0, 500));
+                    }
+                } catch (e) {
+                    console.error('Failed to parse compaction response:', e);
+                }
+
+                if (!summary) {
+                    summary = `[Compaction failed - preserving original context]`;
+                }
+
+                const tokensBefore = compactedMessages.reduce((sum, m) => sum + estimateTokens(escapeHTML(m.content || '')), 0);
+                const tokensAfter = estimateTokens(summary);
+
+                AppState.chatHistory.splice(0, cutoffIndex);
+                
+                const compactionMsg = {
+                    role: 'system',
+                    content: summary,
+                    _compacted: true,
+                    _compactStats: {
+                        messagesRemoved: compactedMessages.length,
+                        tokensBefore: tokensBefore.toLocaleString(),
+                        tokensAfter: tokensAfter.toLocaleString(),
+                        estimatedSaved: (tokensBefore - tokensAfter).toLocaleString()
+                    }
+                };
+
+                AppState.chatHistory.unshift(compactionMsg);
+                
+                let notification;
+                if (verboseMode) {
+                    const reductionPct = Math.round((1 - tokensAfter / tokensBefore) * 100);
+                    const userMsgs = compactedMessages.filter(m => m.role === 'user').length;
+                    const assistantMsgs = compactedMessages.filter(m => m.role === 'assistant').length;
+                    
+                    notification = {
+                        role: 'assistant',
+                        content: `✅ **Context Compaction Complete**\n\n` +
+                            `📊 **Stats:**\n` +
+                            `- Messages compacted: ${compactedMessages.length} (${userMsgs} user / ${assistantMsgs} assistant)\n` +
+                            `- Tokens: ${tokensBefore.toLocaleString()} → ${tokensAfter.toLocaleString()} (${reductionPct}% reduction)\n` +
+                            `- Context freed: ${compactionMsg._compactStats.estimatedSaved} tokens\n` +
+                            `- New context usage: ~${(tokensBefore - (tokensBefore - tokensAfter)).toLocaleString()} tokens\n\n` +
+                            `📝 **Summary length:** ${summary.length} chars (~${tokensAfter.toLocaleString()} tokens)\n\n` +
+                            `🗂️ **Messages removed:**\n${compactedMessages.map((m, i) => `${i+1}. [${m.role}] ${(m.content || '').slice(0, 80).replace(/\n/g, ' ')}${((m.content || '').length > 80 ? '...' : '')}`).join('\n')}\n\n` +
+                            `💾 Compact summary saved as system prompt. Chat continues normally.`
+                    };
+                } else {
+                    notification = {
+                        role: 'assistant',
+                        content: `[Context Compacted] ${compactedMessages.length} messages (${tokensBefore.toLocaleString()} → ${tokensAfter.toLocaleString()} tokens, ~${Math.round((1 - tokensAfter / tokensBefore) * 100)}% reduction). Freed ${compactionMsg._compactStats.estimatedSaved} tokens of context space.`
+                    };
+                }
+
+                AppState.chatHistory.push(notification);
+                saveEncrypted('lex_history', AppState.chatHistory);
+
+            } catch (err) {
+                console.error('Compaction failed:', err);
+                if (AppState.debugMode && err.name !== 'AbortError') {
+                    console.error('DEBUG:', err.message, err.stack);
+                }
+            } finally {
+                AppState.isCompacting = false;
+                // Preserve critical alerts - only reset to Online if context is within bounds
+                const tokens = getTotalTokens();
+                const pct = (tokens / CONTEXT_WINDOW) * 100;
+                if (pct >= 75) {
+                    updateContextBar(); // Keeps "CONTEXT EXCEEDED" or warning status
+                } else {
+                    statusIndicator.innerText = "Online";
+                    statusIndicator.style.color = "#4ade80";
+                }
+                updateContextBar();
+            }
+        }
+
+        function sanitizeMarkdown(rawHtml) {
+            const parsed = marked.parse(rawHtml || '');
+            let sanitized;
+            try {
+                sanitized = DOMPurify.sanitize(parsed, {
+                    ALLOWED_TAGS: [
+                        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                        'hr', 'br', 'b', 'i', 'strong', 'em',
+                        'a', 'pre', 'code', 'img', 'tt', 'span',
+                        'strike', 's', 'u', 'blockquote', 'p',
+                        'ul', 'ol', 'li', 'table', 'thead', 'tbody',
+                        'tr', 'th', 'td'
+                    ],
+                    FORBID_ATTR: ['on*', 'formaction']
+                });
+            } catch (e) {
+                sanitized = DOMPurify.sanitize(parsed);
+            }
+            // Wrap tables without tbody for reliable CSS styling
+            sanitized = sanitized.replace(/<table([^>]*)>([\s\S]*?)<\/table>/g, (match, attrs, content) => {
+                if (!content.trim().startsWith('<tbody') && !content.trim().startsWith('<thead')) {
+                    return `<table${attrs}><tbody>${content}</tbody></table>`;
+                }
+                return match;
+            });
+            return sanitized;
+        }
+
+        function renderChat() {
+            chatWindow.innerHTML = '';
+            AppState.chatHistory.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = `max-w-[85%] p-3 rounded ${msg.role === 'user' ? 'ml-auto bg-zinc-800 text-theme' : 'mr-auto lex-bubble'}`;
+                const label = msg.role === 'user' ? AppState.userName : 'LEX';
+                div.innerHTML = `
+                    <div class="text-[10px] opacity-50 mb-1 cursor-pointer hover:underline" data-rename="true"></div>
+                    <div></div>`;
+                const labelDiv = div.querySelector('[data-rename]');
+                labelDiv.textContent = label;
+                labelDiv.addEventListener('click', renameUser);
+                const contentDiv = div.querySelector('div:last-child');
+
+                if (msg.role === 'assistant') {
+                    contentDiv.className = 'md-content';
+                    try {
+                        const html = sanitizeMarkdown(msg.content);
+                        contentDiv.innerHTML = html;
+
+                        contentDiv.querySelectorAll('pre code').forEach((block) => {
+                            hljs.highlightElement(block);
+                        });
+                    } catch (e) {
+                        contentDiv.textContent = msg.content;
+                    }
+                } else {
+                    contentDiv.textContent = msg.content;
+                }
+
+                if (msg.stats) {
+                    const statsRow = document.createElement('div');
+                    statsRow.className = 'text-[9px] text-zinc-600 mt-2 flex gap-3';
+                    statsRow.innerHTML = `
+                        <span>⚡ ${msg.stats.tokens_per_second} tok/s</span>
+                        <span>↑${msg.stats.input_tokens} ↓${msg.stats.output_tokens}</span>
+                        <span>⏱ ${msg.stats.ttft} ttft</span>`;
+                    div.appendChild(statsRow);
+                }
+
+                chatWindow.appendChild(div);
+            });
+            AppState.lastRenderedIndex = AppState.chatHistory.length - 1;
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function appendMessage(msg) {
+            const div = document.createElement('div');
+            div.className = `max-w-[85%] p-3 rounded ${msg.role === 'user' ? 'ml-auto bg-zinc-800 text-theme' : 'mr-auto lex-bubble'}`;
+            const label = msg.role === 'user' ? AppState.userName : 'LEX';
+            div.innerHTML = `
+                <div class="text-[10px] opacity-50 mb-1 cursor-pointer hover:underline" data-rename="true"></div>
+                <div></div>`;
+            const labelDiv = div.querySelector('[data-rename]');
+            labelDiv.textContent = label;
+            labelDiv.addEventListener('click', renameUser);
+            const contentDiv = div.querySelector('div:last-child');
+
+            if (msg.role === 'assistant') {
+                contentDiv.className = 'md-content';
+                try {
+                    const html = sanitizeMarkdown(msg.content);
+                    contentDiv.innerHTML = html;
+
+                    contentDiv.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightElement(block);
+                    });
+                } catch (e) {
+                    contentDiv.textContent = msg.content;
+                }
+            } else {
+                contentDiv.textContent = msg.content;
+            }
+
+            if (msg.stats) {
+                const statsRow = document.createElement('div');
+                statsRow.className = 'text-[9px] text-zinc-600 mt-2 flex gap-3';
+                statsRow.innerHTML = `
+                    <span>⚡ ${msg.stats.tokens_per_second} tok/s</span>
+                    <span>↑${msg.stats.input_tokens} ↓${msg.stats.output_tokens}</span>
+                    <span>⏱ ${msg.stats.ttft} ttft</span>`;
+                div.appendChild(statsRow);
+            }
+
+            chatWindow.appendChild(div);
+            AppState.lastRenderedIndex = AppState.chatHistory.length - 1;
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function updateContextBar() {
+            const tokens = getTotalTokens();
+            const pct = Math.min(100, (tokens / CONTEXT_WINDOW) * 100);
+            const fill = document.getElementById('context-fill');
+            const text = document.getElementById('context-text');
+            const status = document.getElementById('compaction-status');
+            const tempDisplay = document.getElementById('temp-display');
+            const encStatus = document.getElementById('encryption-status');
+            const connStatus = document.getElementById('connection-status');
+
+            fill.style.width = pct + '%';
+            text.textContent = `${tokens.toLocaleString()} / ${CONTEXT_WINDOW.toLocaleString()}`;
+            if (tempDisplay) tempDisplay.textContent = `T: ${AppState.temperature.toFixed(1)}`;
+
+            // Encryption status
+            if (encStatus) {
+                const hasEncryptedIdentity = localStorage.getItem('lex_identity_enc') !== null;
+                const hasEncryptedHistory = localStorage.getItem('lex_history_enc') !== null;
+                if (hasEncryptedIdentity || hasEncryptedHistory) {
+                    const unencryptedData = AppState.chatHistory.length > 0 && !hasEncryptedHistory;
+                    if (unencryptedData) {
+                        encStatus.textContent = '🔓 UNENCRYPTED STORAGE';
+                        encStatus.className = 'text-yellow-400';
+                    } else {
+                        encStatus.textContent = '🔒 ENCRYPTED STORAGE';
+                        encStatus.className = 'text-green-400';
+                    }
+                } else {
+                    encStatus.textContent = '🔐 READY';
+                    encStatus.className = 'text-zinc-500';
+                }
+            }
+
+            // Connection status (determined by lmFetch behavior)
+            if (connStatus && AppState.serverHost) {
+                if (AppState.connectionSecure === true) {
+                    connStatus.textContent = '🔒 HTTPS';
+                    connStatus.className = 'text-green-400';
+                } else if (AppState.connectionSecure === false) {
+                    connStatus.textContent = '⚠ HTTP';
+                    connStatus.className = 'text-yellow-400';
+                } else {
+                    connStatus.textContent = '⚡ DISCONNECTED';
+                    connStatus.className = 'text-red-400';
+                }
+            } else if (connStatus) {
+                connStatus.textContent = '';
+            }
+
+            if (pct >= 100) {
+                fill.className = 'h-full bg-red-500 rounded-full transition-all duration-500';
+                status.className = 'text-red-400 font-medium';
+                status.textContent = '⚠ CONTEXT EXCEEDED';
+            } else if (pct >= 75) {
+                fill.className = 'h-full bg-amber-400 rounded-full transition-all duration-500';
+                status.className = 'text-amber-400 font-medium';
+                status.textContent = `⚠ Compaction threshold (${Math.round(pct)}%)`;
+            } else if (pct >= 50) {
+                fill.className = 'h-full bg-amber-400 rounded-full transition-all duration-500';
+                status.className = 'text-amber-400';
+                status.textContent = `Context: ${Math.round(pct)}%`;
+            } else {
+                fill.className = 'h-full bg-zinc-500 rounded-full transition-all duration-500';
+                status.className = 'text-zinc-600';
+                status.textContent = `Context: ${Math.round(pct)}%`;
+            }
+
+            if (AppState.isCompacting) {
+                status.textContent = '⏳ Compacting...';
+                status.className = 'text-blue-400 font-medium';
+            }
+
+            if (tokens === 0) {
+                fill.style.width = '0%';
+            }
+        }
+
+        function deriveUserName() {
+            if (!AppState.lexIdentity) return 'USER';
+            const match = AppState.lexIdentity.match(/USER:\s*([^\n\r,]+)/i);
+            return match ? match[1].trim() : 'USER';
+        }
+
+        function extractQuantization(modelKey) {
+            // Try direct quantization field first from API details
+            if (modelKey?.details?.quantization) {
+                return modelKey.details.quantization.toUpperCase();
+            }
+            
+            // Also check for other detail fields that might contain quant info
+            if (modelKey?.details?.format) {
+                const fmt = modelKey.details.format;
+                if (/q\d/.test(fmt)) {
+                    return fmt.toUpperCase();
+                }
+            }
+            
+            const key = modelKey.key || modelKey.display_name || '';
+            if (!key) return null;
+            
+            // Comprehensive quantization patterns — order matters (most specific first)
+            const patterns = [
+                // Full precision
+                /bf16\b/i, /fp16\b/i, /f16\b/, /f32\b/, /fp32\b/,
+                // 8-bit
+                /q8_0/i, /q8_1/i,
+                // 6-bit  
+                /q6_k\b/i,
+                // 5-bit
+                /q5_k_m\b/i, /q5_k_s\b/i, /q5_0\b/i, /q5_1\b/i,
+                // 4-bit
+                /q4_k_m\b/i, /q4_k_s\b/i, /q4_0\b/i, /q4_1\b/i,
+                // 3-bit (integer)
+                /iq3_x[sx]\b/i, /iq3_s\b/i, /iq2_x[sx]\b/i, /iq2_s\b/i,
+                // 2-bit (integer)
+                /iq1_x[sx]\b/i, /iq1_s\b/i,
+                // 4-bit (integer)
+                /iq4_x[sx]\b/i, /iq4_nl\b/i,
+            ];
+            
+            for (const p of patterns) {
+                const m = key.match(p);
+                if (m) return m[0].toUpperCase();
+            }
+            
+            // Generic Qx pattern (e.g., "q4" standalone)
+            const generic = key.match(/\b(q\d+(?:[_\.]\w+)?)\b/i);
+            if (generic) return generic[1].toUpperCase();
+            
+            // Check for common suffixes in model filenames like "-Q4_K_M.gguf"
+            const suffix = key.match(/[-_](q\d+(?:[_\.]\w+)?)(?:\.[a-z]+)?$/i);
+            if (suffix) return suffix[1].toUpperCase();
+            
+            return null;
+        }
+
+        function formatModelDisplayName(m) {
+            const name = m.display_name || m.key;
+            
+            // Prefer direct quantization field from LM Studio API
+            let quant = null;
+            if (m.details?.quantization) {
+                quant = m.details.quantization.toUpperCase();
+            } else if (m.details?.format) {
+                quant = m.details.format.toUpperCase();
+            } else if (m.details?.quantization_level) {
+                quant = m.details.quantization_level.toUpperCase();
+            } else if (m.details?.llama_quantization) {
+                quant = m.details.llama_quantization.toUpperCase();
+            }
+            
+            // Fallback: parse model key/filename for quant patterns
+            if (!quant) quant = extractQuantization(m);
+
+            // DEBUG: log raw model data for first 3 models
+            if (!window._lexDebugModels) window._lexDebugModels = new Set();
+            if (name && !window._lexDebugModels.has(name)) {
+                window._lexDebugModels.add(name);
+                console.log('[MODEL-DATA]', { 
+                    key: m.key, 
+                    display_name: m.display_name, 
+                    details: m.details ? JSON.stringify(m.details) : null,
+                    quant_result: quant,
+                    details_keys: m.details ? Object.keys(m.details) : []
+                });
+            }
+
+            return { name, quant: quant || 'UNKNOWN' };
+        }
+
+        async function checkStatus() {
+            if (!AppState.serverHost) return;
+            const controller = new AbortController();
+            setTimeout(() => controller.abort(), 10000);
+            
+            try {
+                const response = await lmFetch('/api/v1/models', { signal: controller.signal });
+                if (response.ok) {
+                    const data = await response.json();
+                    const loadedModel = data.models?.find(m => m.loaded_instances && m.loaded_instances.length > 0);
+                    
+                    if (loadedModel) {
+                        statusIndicator.innerText = "Online";
+                        statusIndicator.style.color = "#4ade80";
+                        if (!AppState.activeModel) {
+                            AppState.activeModel = loadedModel.key;
+                            localStorage.setItem('lex_active_model', loadedModel.key);
+                        }
+                        modelDisplay.innerText = `MODEL: ${loadedModel.display_name || loadedModel.key}`;
+                    } else {
+                        statusIndicator.innerText = "Ready";
+                        statusIndicator.style.color = "#fbbf24";
+                        modelDisplay.innerText = "NO MODEL LOADED";
+                    }
+
+                    updateEjectButton();
+
+                    if (!AppState.heartbeatStarted) {
+                        AppState.heartbeatStarted = true;
+                        setInterval(checkStatus, 30000);
+                    }
+
+                } else { throw new Error(); }
+            } catch (e) {
+                AppState.connectionSecure = null;
+                if (e.name !== 'AbortError') {
+                    statusIndicator.innerText = "Offline";
+                    statusIndicator.style.color = "#f87171";
+                    modelDisplay.innerText = "SERVER UNREACHABLE";
+                }
+            }
+        }
+
+        async function refreshModelList() {
+            const listDiv = document.getElementById('model-list');
+            if (!listDiv) return;
+
+            const controller = new AbortController();
+            setTimeout(() => controller.abort(), 10000);
+
+            const response = await lmFetch('/api/v1/models', { signal: controller.signal });
+            const data = await response.json();
+            if (!data.models || !Array.isArray(data.models)) {
+                listDiv.innerHTML = '<div class="text-xs text-zinc-600 italic">No models found.</div>';
+                return;
+            }
+            // DEBUG: dump full structure of first 3 models to see all available fields
+            console.log('[MODEL-FIELDS]', JSON.parse(JSON.stringify(data.models.slice(0, 3))));
+            listDiv.innerHTML = '';
+            try {
+                data.models.forEach(m => {
+                    const loaded = m.loaded_instances && m.loaded_instances.length > 0;
+                    const loading = isModelLoading(m.key);
+                    const { name, quant } = formatModelDisplayName(m);
+                    
+                    const btn = document.createElement('div');
+                    btn.className = `flex items-center gap-2 ${loaded ? 'border-green-500 bg-green-900/20' : (loading ? 'border-blue-500 bg-blue-900/20 animate-pulse' : 'border-zinc-700 bg-black')} border rounded p-2 transition-colors`;
+                    
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'flex-1 text-left min-w-0';
+
+                    // Determine quant color
+                    let bitLevel, color;
+                    if (quant) {
+                        if (quant.match(/Q8|Q9|BF16|F16|FP16/i)) { bitLevel = '8-bit'; color = '#22c55e'; }
+                        else if (quant.match(/Q6/i)) { bitLevel = '6-bit'; color = '#eab308'; }
+                        else if (quant.match(/Q5|IQ4/i)) { bitLevel = '5-bit'; color = '#f97316'; }
+                        else if (quant.match(/Q4|IQ3/i)) { bitLevel = '4-bit'; color = '#ef4444'; }
+                        else if (quant.match(/Q3|Q2/i)) { bitLevel = '2-bit'; color = '#a855f7'; }
+                        else if (quant.match(/Q1|Q0/i)) { bitLevel = '1-bit'; color = '#9ca3af'; }
+                        else if (quant.match(/F32|FP32/i)) { bitLevel = '32-bit'; color = '#ec4899'; }
+                        else { bitLevel = quant; color = '#71717a'; }
+                    } else { bitLevel = null; color = '#a1a1aa'; }
+
+                    // Model name
+                    const infoRow = document.createElement('div');
+                    infoRow.className = 'flex items-center gap-1.5 truncate';
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'text-[10px] font-bold truncate';
+                    if (color && !loading) nameSpan.style.color = color;
+                    nameSpan.innerText = loading ? 'LOADING...' : name;
+
+                    infoRow.appendChild(nameSpan);
+
+                    // Show full model key below
+                    const keySpan = document.createElement('div');
+                    keySpan.className = 'text-[8px] text-zinc-600 truncate mt-0.5';
+                    keySpan.title = m.key;
+                    keySpan.innerText = m.key;
+
+                    infoDiv.appendChild(infoRow);
+                    infoDiv.appendChild(keySpan);
+
+                    // Right column: badge + buttons stacked vertically
+                    const btnCol = document.createElement('div');
+                    btnCol.className = 'flex flex-col items-end gap-1 shrink-0';
+
+                    const quantBadge = document.createElement('span');
+                    const rawQuant = quant.replace(/^-/,'').replace(/\.(gguf|bin)$/, '');
+                    if (quant === 'UNKNOWN') {
+                        quantBadge.className = 'text-[6px] font-bold uppercase px-1 py-0.5 rounded-full shrink-0 bg-zinc-800 text-zinc-500 border border-zinc-700';
+                        quantBadge.innerText = rawQuant;
+                    } else {
+                        quantBadge.className = 'text-[6px] font-bold uppercase px-1 py-0.5 rounded-full shrink-0';
+                        quantBadge.style.cssText = `background-color: ${color}20; color: ${color}; border: 1px solid ${color}40;`;
+                        quantBadge.innerText = rawQuant;
+                    }
+
+                    const loadBtn = document.createElement('button');
+                    loadBtn.className = `text-[9px] px-2 py-1 rounded ${loading ? 'opacity-50 cursor-wait' : ''} bg-zinc-800 border border-zinc-600 text-zinc-300 hover:bg-zinc-700 whitespace-nowrap`;
+                    loadBtn.style.cursor = loading ? 'wait' : 'pointer';
+                    loadBtn.innerText = loading ? '...' : (loaded ? 'RELOAD' : 'LOAD');
+                    loadBtn.disabled = loading;
+                    loadBtn.onclick = () => { console.log('[LOAD-BTN] Clicked model:', m.key); loadModel(m.key); };
+                    
+                    const ejectBtn = document.createElement('button');
+                    ejectBtn.className = 'text-[10px] px-2 py-0.5 text-yellow-400 border border-yellow-800 rounded hover:bg-yellow-900/30';
+                    ejectBtn.innerText = 'EJECT';
+                    ejectBtn.onclick = async () => {
+                        try {
+                            console.log('[EJECT-BTN] Model:', m.key);
+
+                            let instanceId;
+                            if (m.loaded_instances?.length) {
+                                const inst = m.loaded_instances[0];
+                                instanceId = inst.instance_id || inst.id || inst.unique_id;
+                            }
+                            if (!instanceId) {
+                                instanceId = m.key;
+                            }
+
+                            console.log('[EJECT-BTN] Using instance_id:', instanceId);
+
+                            // Try HTTP first, then HTTPS
+                            let resp;
+                            try {
+                                resp = await fetch(`http://${AppState.serverHost}:1234/api/v1/models/unload`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ instance_id: instanceId })
+                                });
+                            } catch {
+                                resp = await fetch(`https://${AppState.serverHost}:1234/api/v1/models/unload`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ instance_id: instanceId })
+                                });
+                            }
+
+                            const respText = await resp.text();
+                            console.log('[EJECT-BTN] Response:', resp.status, respText);
+
+                            if (!resp.ok) {
+                                throw new Error(`HTTP ${resp.status}: ${respText}`);
+                            }
+
+                            await refreshModelList();
+                            if (AppState.activeModel === m.key) {
+                                AppState.activeModel = '';
+                                localStorage.removeItem('lex_active_model');
+                                await checkStatus();
+                            }
+                        } catch (e) {
+                            console.error('[EJECT-BTN] Failed:', e);
+                            alert("Eject failed: " + e.message);
+                        }
+                    };
+
+                    btnCol.appendChild(quantBadge);
+                    btnCol.appendChild(loadBtn);
+                    if (loaded) btnCol.appendChild(ejectBtn);
+
+                    btn.appendChild(infoDiv);
+                    btn.appendChild(btnCol);
+                    listDiv.appendChild(btn);
+                });
+            } catch (e) { 
+                listDiv.innerHTML = '<div class="text-xs text-red-500">Failed to fetch models.</div>'; 
+            }
+        }
+
+        async function loadModel(modelId) {
+            console.log('[LOAD] Starting load for:', modelId);
+            if (isModelLoading(modelId)) { console.log('[LOAD] Already loading, skipping'); return; }
+            setModelLoading(modelId, true);
+
+            try {
+                const controller = new AbortController();
+                setTimeout(() => controller.abort(), 60000);
+
+                const resp = await lmFetch('/api/v1/models/load', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: modelId }),
+                    signal: controller.signal
+                });
+
+                console.log('[LOAD] Response status:', resp.status);
+
+                if (!resp.ok) {
+                    const text = await resp.text();
+                    throw new Error(`HTTP ${resp.status}: ${text}`);
+                }
+
+                await checkStatus();
+                await refreshModelList();
+            } catch (e) { 
+                console.error('Load failed:', e);
+                alert("Load failed: " + e.message); 
+            } finally {
+                setModelLoading(modelId, false);
+                refreshModelList();
+            }
+        }
+
+        async function initApp() {
+            if (!AppState.serverHost) {
+                const host = prompt("Enter Tailscale Hostname or IP:");
+                if (host) { AppState.serverHost = host; localStorage.setItem('lex_server', host); }
+            }
+            if (!AppState.lexIdentity) {
+                await showIdentityModal();
+            }
+            if (!AppState.userName) {
+                AppState.userName = deriveUserName();
+                localStorage.setItem('lex_user', AppState.userName);
+            }
+
+            document.body.style.setProperty('--lex-color', AppState.fontColor);
+            document.body.style.setProperty('--lex-size', AppState.fontSize);
+            
+            const debugToggle = document.getElementById('debug-toggle');
+            if (debugToggle) debugToggle.checked = AppState.debugMode;
+            
+            const fontSizeSelect = document.getElementById('font-size-select');
+            if (fontSizeSelect) fontSizeSelect.value = AppState.fontSize;
+
+            const tempSlider = document.getElementById('temp-slider');
+            if (tempSlider) tempSlider.value = AppState.temperature;
+            
+            const tempValue = document.getElementById('temp-value');
+            if (tempValue) tempValue.textContent = AppState.temperature.toFixed(1);
+
+            try { await checkStatus(); } catch (e) { console.error('checkStatus failed:', e); }
+            try { renderChat(); } catch (e) { console.error('renderChat failed:', e); }
+            try { renderHistoryList(); } catch (e) { console.error('renderHistoryList failed:', e); }
+            try { updateContextBar(); } catch (e) { console.error('updateContextBar failed:', e); }
+        }
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('closed'); }
+        function toggleSettings() { 
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('hidden-modal'); 
+            if (!modal.classList.contains('hidden-modal')) {
+                refreshModelList();
+                populateColorPicker();
+                renderSettingsHistoryList();
+            }
+        }
+
+        function populateColorPicker() {
+            const picker = document.getElementById('color-picker');
+            if (!picker) return;
+            picker.innerHTML = '';
+            VALID_COLORS.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = `w-6 h-6 rounded border ${AppState.fontColor === c ? 'border-white ring-2 ring-zinc-400' : 'border-zinc-600 hover:border-zinc-400'} transition-colors`;
+                btn.style.backgroundColor = c;
+                btn.title = c;
+                btn.onclick = () => updateColor(c);
+                picker.appendChild(btn);
+            });
+        }
+
+        async function showLoadModal() {
+            document.getElementById('load-modal').classList.remove('hidden-modal');
+            const listDiv = document.getElementById('load-model-list');
+            try {
+                const controller = new AbortController();
+                setTimeout(() => controller.abort(), 10000);
+                
+                const response = await lmFetch('/api/v1/models', { signal: controller.signal });
+                const data = await response.json();
+                if (!data.models || !Array.isArray(data.models)) {
+                    listDiv.innerHTML = '<div class="text-xs text-zinc-600 italic">No models found.</div>';
+                    return;
+                }
+                listDiv.innerHTML = '';
+                data.models.forEach(m => {
+                    const loaded = m.loaded_instances && m.loaded_instances.length > 0;
+                    const loading = isModelLoading(m.key);
+                    const { name, quant } = formatModelDisplayName(m);
+
+                    const btn = document.createElement('button');
+                    btn.className = `w-full text-left p-2 text-[10px] rounded border ${loaded ? 'border-green-500 bg-green-900/20' : (loading ? 'border-blue-500 bg-blue-900/20 animate-pulse' : 'border-zinc-700 bg-black')} hover:bg-zinc-800 transition-colors truncate`;
+                    btn.disabled = loading;
+
+                    // Determine quant color for box
+                    let bitLevel, color;
+                    if (quant) {
+                        if (quant.match(/Q8|Q9|BF16|F16|FP16/i)) { bitLevel = '8-bit'; color = '#22c55e'; }
+                        else if (quant.match(/Q6/i)) { bitLevel = '6-bit'; color = '#eab308'; }
+                        else if (quant.match(/Q5|IQ4/i)) { bitLevel = '5-bit'; color = '#f97316'; }
+                        else if (quant.match(/Q4|IQ3/i)) { bitLevel = '4-bit'; color = '#ef4444'; }
+                        else if (quant.match(/Q3|Q2/i)) { bitLevel = '2-bit'; color = '#a855f7'; }
+                        else if (quant.match(/Q1|Q0/i)) { bitLevel = '1-bit'; color = '#9ca3af'; }
+                        else if (quant.match(/F32|FP32/i)) { bitLevel = '32-bit'; color = '#ec4899'; }
+                        else { bitLevel = quant; color = '#71717a'; }
+                    } else { bitLevel = null; color = '#3f3f46'; }
+
+                    let html = '<div class="flex items-center gap-1.5 truncate">';
+                    // Model name
+                    html += `<span class="font-bold ${color ? '' : 'text-zinc-400'}">${loading ? 'LOADING...' : name}</span>`;
+                    const rawQuant = quant.replace(/^-/,'').replace(/\.(gguf|bin)$/, '');
+                    if (quant === 'UNKNOWN') {
+                        html += `<span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-full shrink-0 bg-zinc-800 text-zinc-500 border border-zinc-700">${rawQuant}</span>`;
+                    } else {
+                        html += `<span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-full shrink-0" style="background-color: ${color}20; color: ${color}; border: 1px solid ${color}40;">${rawQuant}</span>`;
+                    }
+                    html += '</div>';
+                    btn.innerHTML = html;
+                    btn.onclick = () => loadModelForUser(m.key);
+                    listDiv.appendChild(btn);
+                });
+            } catch (e) { 
+                listDiv.innerHTML = '<div class="text-xs text-red-500">Failed to fetch models.</div>'; 
+            }
+        }
+
+        function hideLoadModal() { document.getElementById('load-modal').classList.add('hidden-modal'); }
+
+        async function showIdentityModal() {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('identity-modal');
+                const textarea = document.getElementById('identity-input');
+                modal.classList.remove('hidden-modal');
+                textarea.focus();
+
+                window._identityResolve = resolve;
+            });
+        }
+
+        function hideIdentityModal() {
+            document.getElementById('identity-modal').classList.add('hidden-modal');
+        }
+
+        function submitIdentity() {
+            const textarea = document.getElementById('identity-input');
+            const identity = textarea.value.trim();
+            if (identity) {
+                AppState.lexIdentity = identity;
+                try {
+                    saveEncrypted('lex_identity', identity);
+                    console.log('Identity saved successfully');
+                } catch (e) {
+                    alert('Failed to save identity: ' + e.message);
+                    return;
+                }
+            }
+            hideIdentityModal();
+            if (window._identityResolve) { window._identityResolve(); }
+        }
+
+        function skipIdentity() {
+            hideIdentityModal();
+            if (window._identityResolve) { window._identityResolve(); }
+        }
+
+        async function editIdentity() {
+            const textarea = document.getElementById('identity-input');
+            try {
+                const d = localStorage.getItem('lex_identity_enc');
+                if (d) {
+                    const decrypted = decrypt(d);
+                    textarea.value = decrypted || '';
+                } else {
+                    textarea.value = AppState.lexIdentity || '';
+                }
+            } catch (e) {
+                console.error('Failed to load identity for editing:', e);
+                textarea.value = AppState.lexIdentity || '';
+            }
+            document.getElementById('settings-modal').classList.add('hidden-modal');
+            await showIdentityModal();
+        }
+
+        async function loadModelForUser(modelId) {
+            if (isModelLoading(modelId)) return;
+            setModelLoading(modelId, true);
+
+            hideLoadModal();
+
+            try {
+                const controller = new AbortController();
+                setTimeout(() => controller.abort(), 60000);
+
+                const resp = await lmFetch('/api/v1/models/load', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: modelId }),
+                    signal: controller.signal
+                });
+
+                if (!resp.ok) {
+                    const text = await resp.text();
+                    throw new Error(`HTTP ${resp.status}: ${text}`);
+                }
+            } catch (e) { 
+                console.error('Load failed:', e);
+                alert("Load failed: " + e.message); 
+            } finally {
+                setModelLoading(modelId, false);
+                await refreshModelList();
+            }
+
+            await checkStatus();
+        }
+
+        async function ejectModel() {
+            if (!AppState.activeModel) {
+                alert("No model currently loaded.");
+                return;
+            }
+
+            console.log('[EJECT] Model:', AppState.activeModel);
+            alert('Please check DevTools Console (F12) for detailed eject debug info.');
+
+            try {
+                const controller = new AbortController();
+                setTimeout(() => controller.abort(), 10000);
+
+                // Try HTTP first, then HTTPS
+                let listData;
+                try {
+                    const resp = await fetch(`http://${AppState.serverHost}:1234/api/v1/models`, { signal: controller.signal });
+                    listData = await resp.json();
+                } catch {
+                    const resp = await fetch(`https://${AppState.serverHost}:1234/api/v1/models`, { signal: controller.signal });
+                    listData = await resp.json();
+                }
+
+                console.log('[EJECT] API response:', JSON.stringify(listData, null, 2));
+
+                const modelObj = listData.models?.find(m => m.key === AppState.activeModel);
+                if (!modelObj) {
+                    console.log('[EJECT] Available models:', listData.models?.map(m => m.key));
+                    alert(`Model "${AppState.activeModel}" not found. Try reloading.`);
+                    return;
+                }
+
+                console.log('[EJECT] Model object:', JSON.stringify(modelObj, null, 2));
+
+                // Try different possible instance_id locations
+                let instanceId;
+                if (modelObj.loaded_instances?.length) {
+                    const inst = modelObj.loaded_instances[0];
+                    instanceId = inst.instance_id || inst.id || inst.unique_id;
+                }
+
+                if (!instanceId) {
+                    instanceId = AppState.activeModel;
+                }
+
+                console.log('[EJECT] Using instance_id:', instanceId);
+
+                // Try HTTP first, then HTTPS
+                let resp;
+                try {
+                    resp = await fetch(`http://${AppState.serverHost}:1234/api/v1/models/unload`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ instance_id: instanceId }),
+                        signal: controller.signal
+                    });
+                } catch {
+                    resp = await fetch(`https://${AppState.serverHost}:1234/api/v1/models/unload`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ instance_id: instanceId }),
+                        signal: controller.signal
+                    });
+                }
+
+                const respText = await resp.text();
+                console.log('[EJECT] Unload response:', resp.status, respText);
+
+                if (!resp.ok) {
+                    throw new Error(`HTTP ${resp.status}: ${respText}`);
+                }
+
+                console.log('[EJECT] Eject successful');
+                AppState.activeModel = '';
+                localStorage.removeItem('lex_active_model');
+                await checkStatus();
+                await refreshModelList();
+            } catch (e) {
+                console.error('[EJECT] Failed:', e);
+                alert("Eject failed: " + e.message);
+            }
+        }
+
+        function updateEjectButton() {
+            const btn = document.getElementById('eject-btn');
+            if (btn) {
+                btn.style.display = AppState.activeModel ? 'block' : 'none';
+            }
+        }
+
+        const VALID_COLORS = ['#e5e7eb', '#4ade80', '#fbbf24', '#60a5fa', '#f472b6', '#ffffff', '#ef4444'];
+
+        function updateColor(color) { 
+            AppState.fontColor = color; 
+            localStorage.setItem('lex_color', color);
+            document.body.style.setProperty('--lex-color', color);
+        }
+        function updateFontSize(size) { 
+            AppState.fontSize = size; 
+            localStorage.setItem('lex_size', size);
+            document.body.style.setProperty('--lex-size', size);
+        }
+
+        function renameUser() {
+            const newName = prompt("Change User Name:", AppState.userName);
+            if (newName) { AppState.userName = newName; localStorage.setItem('lex_user', newName); renderChat(); }
+        }
+
+        async function sendMessage() {
+            if (AppState.isSending) return;
+
+            const text = userInput.value.trim();
+            if (!text || !AppState.serverHost || !AppState.lexIdentity) return;
+            if (text.length > 4096) { alert("Message too long. Maximum 4096 characters."); return; }
+
+            if (AppState.isCompacting) {
+                statusIndicator.innerText = "Please wait...";
+                return;
+            }
+
+            await checkAndCompact();
+
+            if (AppState.currentAbortController) {
+                AppState.currentAbortController.abort();
+            }
+
+            AppState.isSending = true;
+            sendBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+
+            const userMsg = { role: 'user', content: text };
+            AppState.chatHistory.push(userMsg);
+            appendMessage(userMsg);
+            updateContextBar();
+            renderHistoryList();
+            userInput.value = '';
+
+            statusIndicator.innerText = "Thinking...";
+            
+            try {
+                let model = AppState.activeModel;
+
+                if (!model) {
+                    const controller = new AbortController();
+                    setTimeout(() => controller.abort(), 5000);
+                    
+                    try {
+                        const statusResp = await lmFetch('/api/v1/models', { signal: controller.signal });
+                        if (statusResp.ok) {
+                            const statusData = await statusResp.json();
+                            const loaded = statusData.models?.find(m => m.loaded_instances && m.loaded_instances.length > 0);
+                            if (loaded) {
+                                model = loaded.key;
+                                AppState.activeModel = model;
+                                localStorage.setItem('lex_active_model', model);
+                            }
+                        }
+                    } catch (_) { /* keep falling through to hardcoded default */ }
+                }
+
+                const payload = {
+                    model: model || "gemma-4-31b-it-turboquant-mlx", 
+                    system_prompt: AppState.lexIdentity,
+                    input: text,
+                    temperature: AppState.temperature,
+                };
+
+                const controller = new AbortController();
+                AppState.currentAbortController = controller;
+                setTimeout(() => { if (AppState.currentAbortController === controller) controller.abort(); }, GENERATION_TIMEOUT_MS);
+
+                const response = await lmFetch('/api/v1/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                let reply;
+                try {
+                    if (data.output && Array.isArray(data.output)) {
+                        const message = data.output.find(item => item.type === 'message');
+                        reply = (message && message.content) ? message.content.trim() : "No response received.";
+                    } else if (data.text) {
+                        reply = data.text;
+                    } else if (data.choices && data.choices[0]) {
+                        reply = data.choices[0].message.content;
+                    } else if (data.message && data.message.content) {
+                        reply = data.message.content;
+                    } else {
+                        console.error('Unexpected response format:', JSON.stringify(data).slice(0, 500));
+                        reply = "Unexpected server response format.";
+                    }
+                } catch (parseErr) {
+                    reply = "Unexpected server response format.";
+                }
+
+                const statsEntry = data.stats ? (() => {
+                    // Handle LM Studio response format (direct tokens_per_second field)
+                    if (typeof data.stats.tokens_per_second === 'number') {
+                        return {
+                            tokens_per_second: data.stats.tokens_per_second.toFixed(1),
+                            input_tokens: data.stats.input_tokens ?? 'N/A',
+                            output_tokens: data.stats.total_output_tokens ?? (data.stats.eval_count ?? 'N/A'),
+                            ttft: data.stats.time_to_first_token_seconds != null 
+                                ? Math.round(data.stats.time_to_first_token_seconds * 1000) + 'ms' 
+                                : 'N/A'
+                        };
+                    }
+                    // Fallback: llama.cpp style field names (eval_count, eval_duration, etc.)
+                    const evalCount = parseInt(data.stats.eval_count) || 0;
+                    let evalDuration = parseFloat(data.stats.eval_duration);
+                    if (isNaN(evalDuration)) evalDuration = parseFloat(data.stats.time_eval_seconds) || 0;
+                    if (isNaN(evalDuration)) evalDuration = parseFloat(data.stats.eval_duration_ms) ? data.stats.eval_duration_ms * 1e6 : 0;
+                    const tps = (evalDuration > 0 && evalCount > 0) ? Number(evalCount / (evalDuration / 1e9)).toFixed(1) : 'N/A';
+                    const ttftVal = parseFloat(data.stats.time_to_first_token_seconds);
+                    return {
+                        tokens_per_second: tps,
+                        input_tokens: evalCount > 0 ? data.stats.prompt_eval_count : 'N/A',
+                        output_tokens: evalCount > 0 ? data.stats.eval_count : 'N/A',
+                        ttft: !isNaN(ttftVal) ? Math.round(ttftVal * 1000) + 'ms' : 'N/A'
+                    };
+                })() : null;
+
+                const assistantMsg = { role: 'assistant', content: reply, stats: statsEntry };
+                AppState.chatHistory.push(assistantMsg);
+                saveEncrypted('lex_history', AppState.chatHistory);
+                appendMessage(assistantMsg);
+                updateContextBar();
+                renderHistoryList();
+
+            } catch (err) {
+                console.error(err);
+                statusIndicator.innerText = "Error";
+                
+                if (err.name === 'AbortError') {
+                    const timeoutMsg = { role: 'assistant', content: "Request stopped." };
+                    AppState.chatHistory.push(timeoutMsg);
+                    appendMessage(timeoutMsg);
+                } else if (AppState.debugMode) {
+                    console.error('DEBUG:', err.message, err.stack);
+                } else {
+                    const errorMsg = { role: 'assistant', content: "Connection failed." };
+                    AppState.chatHistory.push(errorMsg);
+                    appendMessage(errorMsg);
+                }
+                updateContextBar();
+                renderHistoryList();
+            } finally {
+                AppState.isSending = false;
+                sendBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+                AppState.currentAbortController = null;
+            }
+        }
+
+        stopBtn.addEventListener('click', () => {
+            if (AppState.currentAbortController) {
+                AppState.currentAbortController.abort();
+            }
+        });
+
+        function clearHistory() { 
+            if(confirm("Flush context?")) { 
+                AppState.chatHistory = []; 
+                localStorage.removeItem('lex_history_enc'); 
+                renderChat(); 
+                updateContextBar();
+                renderHistoryList();
+            } 
+        }
+
+        function renderHistoryList(containerId = 'history-list') {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            // Filter to get user messages (first in each exchange pair)
+            const userMessages = AppState.chatHistory.filter(m => m.role === 'user');
+            
+            container.innerHTML = '';
+            if (userMessages.length === 0) {
+                container.innerHTML = '<div class="text-[10px] text-zinc-600 p-2">No history yet</div>';
+                return;
+            }
+            userMessages.slice(-20).reverse().forEach((msg, i) => {
+                const item = document.createElement('div');
+                const preview = (msg.content || '').substring(0, 50) + ((msg.content || '').length > 50 ? '...' : '');
+                item.className = 'p-2 rounded border border-zinc-800 hover:bg-zinc-900 cursor-pointer text-[10px] truncate';
+                item.title = msg.content;
+                const isSettings = containerId === 'settings-history-list';
+                item.innerHTML = `<span class="${isSettings ? 'text-zinc-600' : 'text-zinc-500'}">USER</span><br><span class="${isSettings ? 'text-zinc-400' : 'text-zinc-300'}">${preview}</span>`;
+                item.onclick = () => {
+                    // Scroll to bottom of chat window to show this message context
+                    document.getElementById('chat-window').scrollTo({ top: 999999, behavior: 'smooth' });
+                };
+                container.appendChild(item);
+            });
+        }
+
+        function renderSettingsHistoryList() {
+            return renderHistoryList('settings-history-list');
+        }
+
+        function resetConfig() { 
+            if(confirm("Reset Server/Identity?")) { 
+                localStorage.removeItem('lex_server'); 
+                localStorage.removeItem('lex_identity_enc');
+                localStorage.removeItem('lex_history_enc');
+                localStorage.removeItem('lex_active_model');
+                localStorage.removeItem('lex_user');
+                location.reload(); 
+            } 
+        }
+
+        function clearAllStorage() {
+            if(confirm("Clear ALL stored data? This cannot be undone.")) {
+                const keys = ['lex_server', 'lex_identity_enc', 'lex_history_enc', 'lex_active_model', 'lex_user', 'lex_debug', 'lex_color', 'lex_size', 'lex_temperature'];
+                keys.forEach(k => localStorage.removeItem(k));
+                AppState.lexIdentity = '';
+                AppState.chatHistory = [];
+                AppState.serverHost = '';
+                AppState.userName = '';
+                location.reload(); 
+            }
+        }
+
+        async function testCompactionCycle() {
+            const tokens = getTotalTokens();
+
+            if (AppState.chatHistory.length < COMPACTION_MIN_MESSAGES) {
+                alert(`Need at least ${COMPACTION_MIN_MESSAGES} messages to compact. Currently have ${AppState.chatHistory.length}. Add more messages and try again.`);
+                return;
+            }
+
+            const cutoffIndex = Math.max(0, AppState.chatHistory.length - MESSAGES_TO_KEEP);
+            const messagesToCompact = AppState.chatHistory.slice(0, cutoffIndex).filter(m => m.role !== 'system' || !m._compacted);
+            
+            let msgList = '';
+            messagesToCompact.forEach((m, i) => {
+                const preview = (m.content || '').slice(0, 60).replace(/\n/g, ' ').substring(0, 60);
+                msgList += `\n${i+1}. [${m.role}] "${preview}${(m.content || '').length > 60 ? '...' : ''}"`;
+            });
+
+            if (confirm(`Test Compaction Cycle\n\nContext: ${tokens.toLocaleString()} tokens (${Math.round(tokens / CONTEXT_WINDOW * 100)}% of ${CONTEXT_WINDOW.toLocaleString()} window)\nMessages: ${AppState.chatHistory.length} total\nWill compact: ${messagesToCompact.length} messages\n\nMessages to compact:${msgList}\n\nContinue?`)) {
+                statusIndicator.innerText = "Compacting...";
+                statusIndicator.style.color = "#60a5fa";
+                
+                await compactConversation(tokens, true);
+                
+                renderChat();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('debug-toggle').addEventListener('change', (e) => { 
+                AppState.debugMode = e.target.checked; 
+                localStorage.setItem('lex_debug', AppState.debugMode);
+            });
+
+            document.getElementById('temp-slider').addEventListener('input', (e) => { 
+                AppState.temperature = parseFloat(e.target.value);
+                localStorage.setItem('lex_temperature', AppState.temperature);
+                document.getElementById('temp-value').textContent = AppState.temperature.toFixed(1);
+                const tempDisplay = document.getElementById('temp-display');
+                if (tempDisplay) tempDisplay.textContent = `T: ${AppState.temperature.toFixed(1)}`;
+            });
+
+            sendBtn.addEventListener('click', sendMessage);
+            userInput.addEventListener('keydown', (e) => { 
+                if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                else if(e.key === 'Enter' && e.shiftKey) { 
+                    // Allow Shift+Enter for newline
+                    const start = userInput.selectionStart;
+                    const end = userInput.selectionEnd;
+                    userInput.value = userInput.value.substring(0, start) + '\n' + userInput.value.substring(end);
+                    userInput.selectionStart = userInput.selectionEnd = start + 1;
+                }
+            });
+
+            initApp().catch(err => { 
+                console.error('Init failed:', err);
+                if (statusIndicator) {
+                    statusIndicator.innerText = "Error: " + err.message;
+                    statusIndicator.style.color = "#f87171";
+                }
+            });
+        });
+    </script>
+</body>
+</html>
