@@ -261,11 +261,12 @@
                   <div>
                       <label class="block text-[10px] text-zinc-500 uppercase mb-2">LM Studio Host (Tailscale IP/Hostname)</label>
                       <input type="text" id="setup-host-input" class="w-full bg-black border border-zinc-700 p-2 rounded text-xs" placeholder="e.g. stmbp16 or 100.x.y.z">
+                      <p class="text-[9px] text-zinc-600 mt-1">Where LM Studio runs. Open LM Studio → Settings → enable "Serve on local network"</p>
                   </div>
                   <div>
-                      <label class="block text-[10px] text-zinc-500 uppercase mb-2">API Proxy URL (optional)</label>
-                      <input type="text" id="setup-api-url-input" class="w-full bg-black border border-zinc-700 p-2 rounded text-xs" placeholder="e.g. http://stmbp16:3000 - for hosted versions">
-                      <p class="text-[9px] text-zinc-600 mt-1">Required when loading Lex from hosted URL (GitHub Pages, etc.). Run `node proxy.js` on the Mac where LM Studio runs.</p>
+                      <label class="block text-[10px] text-zinc-500 uppercase mb-2">API Proxy URL</label>
+                      <input type="text" id="setup-api-url-input" class="w-full bg-black border border-zinc-700 p-2 rounded text-xs" placeholder="http://stmbp16:3000">
+                      <p class="text-[9px] text-zinc-600 mt-1">Run <code class="bg-zinc-800 px-1 rounded">node proxy.js</code> on the Mac with LM Studio. Proxy listens on port 3000.</p>
                   </div>
                   <button onclick="testSetupConnection()" id="setup-test-btn" class="w-full py-2 text-xs bg-zinc-800 text-zinc-300 border border-zinc-600 rounded hover:bg-zinc-700">TEST CONNECTION</button>
                   <div id="setup-status" class="text-xs text-center hidden"></div>
@@ -1306,6 +1307,14 @@
             statusEl.classList.remove('hidden');
             
             try {
+                if (apiUrl && !/:/.test(apiUrl)) {
+                    statusEl.textContent = '✗ URL must include port, e.g. http://stmbp16:3000';
+                    statusEl.className = 'text-xs text-center text-red-400';
+                    setupTested = false;
+                    saveBtn.disabled = true;
+                    return;
+                }
+                
                 const testUrl = apiUrl || `http://${host}:1234`;
                 
                 console.log('[SETUP] Testing:', `${testUrl}/api/v1/models`);
@@ -1328,7 +1337,10 @@
                     saveBtn.disabled = true;
                 }
             } catch (e) {
-                statusEl.textContent = '✗ Cannot reach. Check: 1) proxy.js running on Mac? 2) Correct IP/port? 3) Browser console for details.';
+                const hint = apiUrl 
+                    ? 'Proxy not reachable. Run `node proxy.js` on the Mac with LM Studio, ensure port 3000 is open.'
+                    : 'LM Studio not reachable. Ensure LM Studio is running with "Serve on local network" enabled.';
+                statusEl.textContent = '✗ Connection failed. ' + hint;
                 statusEl.className = 'text-xs text-center text-red-400';
                 setupTested = false;
                 saveBtn.disabled = true;
