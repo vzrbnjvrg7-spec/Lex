@@ -138,6 +138,19 @@
                 <button id="send-btn" class="bg-zinc-100 text-black px-6 py-2 font-bold hover:bg-white transition-colors">SEND</button>
                 <button id="stop-btn" class="bg-red-600 text-white px-4 py-2 font-bold hover:bg-red-500 transition-colors hidden">STOP</button>
             </div>
+
+            <div id="connection-error-banner" class="hidden max-w-4xl mx-auto mt-3 p-3 rounded border border-yellow-600 bg-yellow-900/20" style="display: none;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;">🔌</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; font-size: 11px;">Cannot connect to LM Studio</div>
+                        <div style="font-size: 10px; margin-top: 4px;">Server: <code style="background: #18181b; padding: 1px 4px; border-radius: 3px;"></code></div>
+                        <ol style="margin: 6px 0; padding-left: 18px; font-size: 9px; color: #a1a1aa;"></ol>
+                    </div>
+                    <button onclick="dismissConnectionError()" style="background: none; border: 1px solid #71717a; color: #a1a1aa; padding: 2px 8px; border-radius: 4px; font-size: 9px; cursor: pointer;">RETRY</button>
+                    <button onclick="document.getElementById('connection-error-banner').classList.add('hidden'); document.getElementById('connection-error-banner').style.display = 'none';" style="background: none; border: 1px solid #71717a; color: #a1a1aa; padding: 2px 8px; border-radius: 4px; font-size: 9px; cursor: pointer;">✕</button>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -174,6 +187,11 @@
                 </div>
                 <div class="border-t border-zinc-700 pt-3">
                     <button onclick="editIdentity()" class="w-full py-2 text-xs bg-zinc-800 text-zinc-300 border border-zinc-600 rounded hover:bg-zinc-700">Edit Identity Protocol</button>
+                </div>
+                <div class="border-t border-zinc-700 pt-3">
+                    <label class="block text-[10px] text-zinc-500 uppercase mb-2">API Proxy URL</label>
+                    <input type="text" id="api-url-input" class="w-full bg-black border border-zinc-700 p-2 rounded text-xs" placeholder="http://proxy-host:3000">
+                    <button onclick="saveApiUrl()" class="w-full py-2 mt-1 text-xs bg-zinc-800 text-zinc-300 border border-zinc-600 rounded hover:bg-zinc-700">Save & Test</button>
                 </div>
                 <div id="model-list" class="space-y-1 max-h-[30vh] overflow-y-auto border-t border-zinc-700 pt-3"></div>
                 <button onclick="ejectModel()" class="w-full py-2 text-xs bg-yellow-900/20 text-yellow-400 border border-yellow-800 rounded hover:bg-yellow-900/40" id="eject-btn">Eject Model</button>
@@ -269,9 +287,10 @@
          function saveEncrypted(key, value) { localStorage.setItem(key + '_enc', encrypt(JSON.stringify(value))); }
          function loadEncrypted(key) { const d = localStorage.getItem(key + '_enc'); return d ? JSON.parse(decrypt(d)) : null; }
 
-         const AppState = {
-             serverHost: localStorage.getItem('lex_server'),
-             lexIdentity: (() => { try { const d = localStorage.getItem('lex_identity_enc'); return (d && decrypt(d)) || ''; } catch { console.error('Failed to load identity, will prompt:', arguments.callee.name); return ''; } })(),
+          const AppState = {
+              serverHost: localStorage.getItem('lex_server'),
+              apiUrl: localStorage.getItem('lex_api_url') || '', // optional proxy URL, e.g. http://proxy-host:3000
+              lexIdentity: (() => { try { const d = localStorage.getItem('lex_identity_enc'); return (d && decrypt(d)) || ''; } catch { console.error('Failed to load identity, will prompt:', arguments.callee.name); return ''; } })(),
              userName: localStorage.getItem('lex_user') || '', 
              chatHistory: (() => { try { const d = localStorage.getItem('lex_history_enc'); return d ? JSON.parse(decrypt(d)) : []; } catch { localStorage.removeItem('lex_history_enc'); return []; } })(),
              debugMode: localStorage.getItem('lex_debug') === 'true',
@@ -305,20 +324,144 @@
             return div.innerHTML;
         }
 
-        // Fetch to LM Studio - tries HTTP first (LM Studio default), falls back to HTTPS
+        // Fetch to LM Studio - uses configured API URL (proxy) or direct connection
         async function lmFetch(path, options = {}) {
-            const host = AppState.serverHost;
-            if (!host) throw new Error('No server configured');
-            const url = `http://${host}:1234${path}`;
-            try {
-                const resp = await fetch(url, options);
-                AppState.connectionSecure = false;
-                return resp;
-            } catch {
-                const fallback = `https://${host}:1234${path}`;
-                AppState.connectionSecure = true;
-                return fetch(fallback, options);
+            const apiUrl = AppState.apiUrl;
+            if (apiUrl) {
+                // Using proxy - strip trailing slash and ensure path starts with /
+                const base = apiUrl.replace(/\/$/, '');
+                const url = `${base}${path}`;
+                try {
+                    const resp = await fetch(url, options);
+                    AppState.connectionSecure = url.startsWith('https');
+                    return resp;
+                } catch (e) {
+                    throw new Error(`Proxy unreachable: ${url}`);
+                }
+            } else {
+                // Direct connection - tries HTTP first, falls back to HTTPS
+                const host = AppState.serverHost;
+                if (!host) throw new Error('No server configured');
+                const url = `http://${host}:1234${path}`;
+                try {
+                    const resp = await fetch(url, options);
+                    AppState.connectionSecure = false;
+                    return resp;
+                } catch {
+                    const fallback = `https://${host}:1234${path}`;
+                    AppState.connectionSecure = true;
+                    return fetch(fallback, options);
+                }
             }
+        }
+
+        // Connection health check - runs on startup to verify LM Studio is reachable
+        async function checkConnection() {
+            // If using proxy, test that first
+            if (AppState.apiUrl) {
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 5000);
+                    
+                    const resp = await fetch(`${AppState.apiUrl.replace(/\/$/, '')}/api/v1/models`, { signal: controller.signal });
+                    clearTimeout(timeout);
+
+                    if (resp.ok) {
+                        AppState.connectionSecure = AppState.apiUrl.startsWith('https');
+                        return true;
+                    }
+                } catch (e) {
+                    // Proxy failed, clear it for next attempt
+                    AppState.apiUrl = '';
+                }
+            }
+
+            const host = AppState.serverHost;
+            if (!host) return false;
+
+            // Test both HTTP and HTTPS with timeout
+            const urls = [
+                `http://${host}:1234/api/v1/models`,
+                `https://${host}:1234/api/v1/models`
+            ];
+
+            for (const url of urls) {
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 5000);
+                    
+                    const resp = await fetch(url, { signal: controller.signal });
+                    clearTimeout(timeout);
+
+                    if (resp.ok) {
+                        AppState.connectionSecure = url.startsWith('https');
+                        
+                        // Store the working protocol back to serverHost for clarity
+                        const hostOnly = host.replace(/^https?:\/\//, '');
+                        if (AppState.serverHost !== hostOnly) {
+                            AppState.serverHost = hostOnly;
+                            localStorage.setItem('lex_server', hostOnly);
+                        }
+
+                        return true;
+                    }
+                } catch (e) {
+                    // Try next URL
+                    continue;
+                }
+            }
+
+            AppState.connectionSecure = null;
+            return false;
+        }
+
+        async function showConnectionError(lastHost) {
+            const banner = document.getElementById('connection-error-banner');
+            if (!banner) return;
+
+            // Check if host looks like an IP or hostname
+            let steps = '';
+            const isIP = /^\d+\.\d+\.\d+\.\d+$/.test(lastHost);
+            if (!isIP) {
+                steps += `<li style="margin-bottom: 4px;">Make sure <b>${lastHost}</b> is reachable — try <code style="background: #18181b; padding: 1px 4px; border-radius: 3px;">ssh ${lastHost}</code> from another device</li>`;
+            } else {
+                steps += `<li style="margin-bottom: 4px;">Check the IP address — try <code style="background: #18181b; padding: 1px 4px; border-radius: 3px;">ping ${lastHost}</code></li>`;
+            }
+
+            steps += `<li style="margin-bottom: 4px;">Ensure LM Studio's <b>"Serve on local network"</b> is enabled</li>`;
+            steps += `<li style="margin-bottom: 4px;">Check that port <b>1234</b> is not blocked by firewall</li>`;
+
+            banner.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;">🔌</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; font-size: 11px;">Cannot connect to LM Studio</div>
+                        <div style="font-size: 10px; margin-top: 4px;">Server: <code style="background: #18181b; padding: 1px 4px; border-radius: 3px;">${lastHost}</code></div>
+                        <ol style="margin: 6px 0; padding-left: 18px; font-size: 9px; color: #a1a1aa;">${steps}</ol>
+                    </div>
+                    <button onclick="dismissConnectionError()" style="background: none; border: 1px solid #71717a; color: #a1a1aa; padding: 2px 8px; border-radius: 4px; font-size: 9px; cursor: pointer;">RETRY</button>
+                    <button onclick="document.getElementById('connection-error-banner').classList.add('hidden'); document.getElementById('connection-error-banner').style.display = 'none';" style="background: none; border: 1px solid #71717a; color: #a1a1aa; padding: 2px 8px; border-radius: 4px; font-size: 9px; cursor: pointer;">✕</button>
+                </div>
+            `;
+            banner.classList.remove('hidden');
+        }
+
+        async function dismissConnectionError() {
+            const host = AppState.serverHost;
+            if (!host) return;
+
+            const connected = await checkConnection();
+            if (connected) {
+                clearConnectionError();
+                updateContextBar();
+            } else {
+                alert('Still cannot connect to ' + host);
+            }
+        }
+
+        async function clearConnectionError() {
+            const banner = document.getElementById('connection-error-banner');
+            if (banner) banner.classList.add('hidden');
         }
 
         function estimateTokens(text) {
@@ -780,6 +923,8 @@
                 if (response.ok) {
                     const data = await response.json();
                     const loadedModel = data.models?.find(m => m.loaded_instances && m.loaded_instances.length > 0);
+
+                    clearConnectionError();
                     
                     if (loadedModel) {
                         statusIndicator.innerText = "Online";
@@ -1001,6 +1146,26 @@
                 const host = prompt("Enter Tailscale Hostname or IP:");
                 if (host) { AppState.serverHost = host; localStorage.setItem('lex_server', host); }
             }
+
+            // If using hosted version, prompt for proxy URL
+            if (!AppState.apiUrl && window.location.protocol !== 'file:') {
+                const apiUrl = prompt("Enter proxy URL (e.g. http://proxy-host:3000):", '');
+                if (apiUrl) { 
+                    AppState.apiUrl = apiUrl.replace(/\/$/, '');
+                    localStorage.setItem('lex_api_url', AppState.apiUrl); 
+                }
+            }
+
+            // Connection health check on startup
+            if (AppState.serverHost) {
+                const connected = await checkConnection();
+                if (!connected) {
+                    showConnectionError(AppState.serverHost);
+                } else {
+                    await clearConnectionError();
+                }
+            }
+
             if (!AppState.lexIdentity) {
                 await showIdentityModal();
             }
@@ -1038,6 +1203,47 @@
                 refreshModelList();
                 populateColorPicker();
                 renderSettingsHistoryList();
+                
+                // Populate API URL input
+                const apiUrlInput = document.getElementById('api-url-input');
+                if (apiUrlInput) {
+                    apiUrlInput.value = AppState.apiUrl || '';
+                }
+            }
+        }
+
+        async function saveApiUrl() {
+            const input = document.getElementById('api-url-input');
+            if (!input) return;
+            
+            const url = input.value.trim().replace(/\/$/, '');
+            
+            if (!url) {
+                AppState.apiUrl = '';
+                localStorage.removeItem('lex_api_url');
+                alert('Proxy URL cleared. Will use direct connection.');
+                return;
+            }
+
+            // Test the proxy
+            try {
+                const controller = new AbortController();
+                setTimeout(() => controller.abort(), 5000);
+                
+                const resp = await fetch(`${url}/api/v1/models`, { signal: controller.signal });
+                
+                if (resp.ok) {
+                    AppState.apiUrl = url;
+                    localStorage.setItem('lex_api_url', url);
+                    alert(`Proxy saved! Connected to ${url}`);
+                    
+                    // Re-fetch model list
+                    await refreshModelList();
+                } else {
+                    alert('Proxy is not responding correctly. Status: ' + resp.status);
+                }
+            } catch (e) {
+                alert('Cannot connect to proxy: ' + url);
             }
         }
 
