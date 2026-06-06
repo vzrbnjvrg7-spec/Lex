@@ -352,11 +352,14 @@
                 // Using proxy - strip trailing slash and ensure path starts with /
                 const base = apiUrl.replace(/\/$/, '');
                 const url = `${base}${path}`;
+                console.log('[FETCH] Proxy:', url);
                 try {
                     const resp = await fetch(url, options);
                     AppState.connectionSecure = url.startsWith('https');
+                    console.log('[FETCH] Response:', resp.status);
                     return resp;
                 } catch (e) {
+                    console.error('[FETCH] Proxy error:', e.message);
                     throw new Error(`Proxy unreachable: ${url}`);
                 }
             } else {
@@ -384,16 +387,19 @@
                     const controller = new AbortController();
                     const timeout = setTimeout(() => controller.abort(), 5000);
                     
+                    console.log('[CONN] Testing proxy:', `${AppState.apiUrl}/api/v1/models`);
                     const resp = await fetch(`${AppState.apiUrl.replace(/\/$/, '')}/api/v1/models`, { signal: controller.signal });
                     clearTimeout(timeout);
 
                     if (resp.ok) {
+                        console.log('[CONN] Proxy connected OK');
                         AppState.connectionSecure = AppState.apiUrl.startsWith('https');
                         return true;
+                    } else {
+                        console.log('[CONN] Proxy returned:', resp.status);
                     }
                 } catch (e) {
-                    // Proxy failed, clear it for next attempt
-                    AppState.apiUrl = '';
+                    console.error('[CONN] Proxy failed:', e.message);
                 }
             }
 
@@ -408,6 +414,7 @@
 
             for (const url of urls) {
                 try {
+                    console.log('[CONN] Testing direct:', url);
                     const controller = new AbortController();
                     const timeout = setTimeout(() => controller.abort(), 5000);
                     
@@ -415,6 +422,7 @@
                     clearTimeout(timeout);
 
                     if (resp.ok) {
+                        console.log('[CONN] Direct connected OK');
                         AppState.connectionSecure = url.startsWith('https');
                         
                         // Store the working protocol back to serverHost for clarity
@@ -1163,7 +1171,7 @@
         }
 
         async function initApp() {
-            if (!AppState.serverHost || !AppState.apiUrl) {
+            if (!AppState.serverHost && !AppState.apiUrl) {
                 showSetupModal();
                 return;
             }
@@ -1300,10 +1308,13 @@
             try {
                 const testUrl = apiUrl || `http://${host}:1234`;
                 
+                console.log('[SETUP] Testing:', `${testUrl}/api/v1/models`);
+                
                 const controller = new AbortController();
-                setTimeout(() => controller.abort(), 5000);
+                setTimeout(() => controller.abort(), 10000);
                 
                 const resp = await fetch(`${testUrl}/api/v1/models`, { signal: controller.signal });
+                console.log('[SETUP] Response:', resp.status, resp.ok);
                 
                 if (resp.ok) {
                     statusEl.textContent = '✓ Connected!';
@@ -1317,7 +1328,7 @@
                     saveBtn.disabled = true;
                 }
             } catch (e) {
-                statusEl.textContent = '✗ Cannot reach host. Check Tailscale connection and LM Studio settings.';
+                statusEl.textContent = '✗ Cannot reach. Check: 1) proxy.js running on Mac? 2) Correct IP/port? 3) Browser console for details.';
                 statusEl.className = 'text-xs text-center text-red-400';
                 setupTested = false;
                 saveBtn.disabled = true;
