@@ -242,17 +242,38 @@
          </div>
      </div>
 
-     <div id="identity-modal" class="hidden-modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-         <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-lg w-[700px] space-y-4">
-             <h3 class="text-lg font-bold border-b border-zinc-700 pb-2">Lex Identity Protocol</h3>
-             <p class="text-xs text-zinc-400">Paste your Lex Identity Protocol (Markdown content). This becomes the system prompt for all conversations.</p>
-             <textarea id="identity-input" class="w-full h-80 bg-black border border-zinc-700 p-3 rounded text-xs font-mono resize-none focus:outline-none focus:border-zinc-500" placeholder="Paste your identity protocol here..."></textarea>
-             <div class="flex gap-2">
-                 <button onclick="submitIdentity()" class="flex-1 py-2 bg-zinc-100 text-black font-bold rounded hover:bg-white">SAVE & CONTINUE</button>
-                 <button onclick="skipIdentity()" class="py-2 px-4 text-zinc-500 border border-zinc-700 rounded hover:bg-zinc-800 text-xs">SKIP</button>
-             </div>
-         </div>
-     </div>
+      <div id="identity-modal" class="hidden-modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-lg w-[700px] space-y-4">
+              <h3 class="text-lg font-bold border-b border-zinc-700 pb-2">Lex Identity Protocol</h3>
+              <p class="text-xs text-zinc-400">Paste your Lex Identity Protocol (Markdown content). This becomes the system prompt for all conversations.</p>
+              <textarea id="identity-input" class="w-full h-80 bg-black border border-zinc-700 p-3 rounded text-xs font-mono resize-none focus:outline-none focus:border-zinc-500" placeholder="Paste your identity protocol here..."></textarea>
+              <div class="flex gap-2">
+                  <button onclick="submitIdentity()" class="flex-1 py-2 bg-zinc-100 text-black font-bold rounded hover:bg-white">SAVE & CONTINUE</button>
+                  <button onclick="skipIdentity()" class="py-2 px-4 text-zinc-500 border border-zinc-700 rounded hover:bg-zinc-800 text-xs">SKIP</button>
+              </div>
+          </div>
+      </div>
+
+      <div id="setup-modal" class="hidden-modal fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm">
+          <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-lg w-[500px] space-y-4">
+              <h3 class="text-lg font-bold border-b border-zinc-700 pb-2">Connect to LM Studio</h3>
+              <div class="space-y-4">
+                  <div>
+                      <label class="block text-[10px] text-zinc-500 uppercase mb-2">LM Studio Host (Tailscale IP/Hostname)</label>
+                      <input type="text" id="setup-host-input" class="w-full bg-black border border-zinc-700 p-2 rounded text-xs" placeholder="e.g. stmbp16 or 100.x.y.z">
+                  </div>
+                  <div>
+                      <label class="block text-[10px] text-zinc-500 uppercase mb-2">API Proxy URL (optional)</label>
+                      <input type="text" id="setup-api-url-input" class="w-full bg-black border border-zinc-700 p-2 rounded text-xs" placeholder="e.g. http://stmbp16:3000 - for hosted versions">
+                      <p class="text-[9px] text-zinc-600 mt-1">Required when loading Lex from hosted URL (GitHub Pages, etc.). Run `node proxy.js` on the Mac where LM Studio runs.</p>
+                  </div>
+                  <button onclick="testSetupConnection()" id="setup-test-btn" class="w-full py-2 text-xs bg-zinc-800 text-zinc-300 border border-zinc-600 rounded hover:bg-zinc-700">TEST CONNECTION</button>
+                  <div id="setup-status" class="text-xs text-center hidden"></div>
+                  <button onclick="saveSetup()" id="setup-save-btn" class="w-full py-2 bg-zinc-100 text-black font-bold rounded hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed" disabled>SAVE & CONTINUE</button>
+              </div>
+          </div>
+      </div>
+
 
       <script>
          const CONTEXT_WINDOW = 65000;
@@ -1142,18 +1163,9 @@
         }
 
         async function initApp() {
-            if (!AppState.serverHost) {
-                const host = prompt("Enter Tailscale Hostname or IP:");
-                if (host) { AppState.serverHost = host; localStorage.setItem('lex_server', host); }
-            }
-
-            // If using hosted version, prompt for proxy URL
-            if (!AppState.apiUrl && window.location.protocol !== 'file:') {
-                const apiUrl = prompt("Enter proxy URL (e.g. http://proxy-host:3000):", '');
-                if (apiUrl) { 
-                    AppState.apiUrl = apiUrl.replace(/\/$/, '');
-                    localStorage.setItem('lex_api_url', AppState.apiUrl); 
-                }
+            if (!AppState.serverHost || !AppState.apiUrl) {
+                showSetupModal();
+                return;
             }
 
             // Connection health check on startup
@@ -1245,6 +1257,92 @@
             } catch (e) {
                 alert('Cannot connect to proxy: ' + url);
             }
+        }
+
+        // Setup modal functions
+        function showSetupModal() {
+            const modal = document.getElementById('setup-modal');
+            modal.classList.remove('hidden-modal');
+            
+            const hostInput = document.getElementById('setup-host-input');
+            const apiUrlInput = document.getElementById('setup-api-url-input');
+            
+            hostInput.value = AppState.serverHost || '';
+            apiUrlInput.value = AppState.apiUrl || '';
+            
+            document.getElementById('setup-status').classList.add('hidden');
+            document.getElementById('setup-save-btn').disabled = true;
+        }
+
+        let setupTested = false;
+        
+        async function testSetupConnection() {
+            const hostInput = document.getElementById('setup-host-input');
+            const apiUrlInput = document.getElementById('setup-api-url-input');
+            const statusEl = document.getElementById('setup-status');
+            const saveBtn = document.getElementById('setup-save-btn');
+            
+            const host = hostInput.value.trim();
+            let apiUrl = apiUrlInput.value.trim().replace(/\/$/, '');
+            
+            if (!host) {
+                statusEl.textContent = 'Please enter a host';
+                statusEl.className = 'text-xs text-center text-red-400';
+                statusEl.classList.remove('hidden');
+                saveBtn.disabled = true;
+                return;
+            }
+            
+            statusEl.textContent = 'Testing connection...';
+            statusEl.className = 'text-xs text-center text-yellow-400';
+            statusEl.classList.remove('hidden');
+            
+            try {
+                const testUrl = apiUrl || `http://${host}:1234`;
+                
+                const controller = new AbortController();
+                setTimeout(() => controller.abort(), 5000);
+                
+                const resp = await fetch(`${testUrl}/api/v1/models`, { signal: controller.signal });
+                
+                if (resp.ok) {
+                    statusEl.textContent = '✓ Connected!';
+                    statusEl.className = 'text-xs text-center text-green-400';
+                    setupTested = true;
+                    saveBtn.disabled = false;
+                } else {
+                    statusEl.textContent = '✗ Connection failed (status: ' + resp.status + ')';
+                    statusEl.className = 'text-xs text-center text-red-400';
+                    setupTested = false;
+                    saveBtn.disabled = true;
+                }
+            } catch (e) {
+                statusEl.textContent = '✗ Cannot reach host. Check Tailscale connection and LM Studio settings.';
+                statusEl.className = 'text-xs text-center text-red-400';
+                setupTested = false;
+                saveBtn.disabled = true;
+            }
+        }
+
+        function saveSetup() {
+            if (!setupTested) return;
+            
+            const hostInput = document.getElementById('setup-host-input');
+            const apiUrlInput = document.getElementById('setup-api-url-input');
+            
+            AppState.serverHost = hostInput.value.trim();
+            const apiUrl = apiUrlInput.value.trim().replace(/\/$/, '');
+            AppState.apiUrl = apiUrl || '';
+            
+            localStorage.setItem('lex_server', AppState.serverHost);
+            if (AppState.apiUrl) {
+                localStorage.setItem('lex_api_url', AppState.apiUrl);
+            } else {
+                localStorage.removeItem('lex_api_url');
+            }
+            
+            document.getElementById('setup-modal').classList.add('hidden-modal');
+            initApp();
         }
 
         function populateColorPicker() {
@@ -1510,7 +1608,11 @@
 
         function renameUser() {
             const newName = prompt("Change User Name:", AppState.userName);
-            if (newName) { AppState.userName = newName; localStorage.setItem('lex_user', newName); renderChat(); }
+            if (newName && newName.trim()) { 
+                AppState.userName = newName.trim(); 
+                localStorage.setItem('lex_user', AppState.userName); 
+                renderChat(); 
+            }
         }
 
         async function sendMessage() {
